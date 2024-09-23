@@ -2,7 +2,7 @@ pipeline {
     agent any
     
     environment {
-        IMAGE_NAME = "your-docker-image"
+        IMAGE_NAME = "hello-world-app"
         IMAGE_TAG = "latest"
         TRIVY_REPORT = "trivy_report.html"
     }
@@ -10,7 +10,7 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                // Clone the repository with the source code
+                // Clone the repository with the Dockerfile and docker-compose.yml
                 git 'https://github.com/Ghanu8/test.git'
             }
         }
@@ -20,7 +20,18 @@ pipeline {
                 script {
                     // Build the Docker image
                     sh """
-                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                        docker-compose build
+                    """
+                }
+            }
+        }
+
+        stage('Run Docker Compose') {
+            steps {
+                script {
+                    // Run the app with Docker Compose
+                    sh """
+                        docker-compose up -d
                     """
                 }
             }
@@ -52,8 +63,10 @@ pipeline {
 
     post {
         always {
-            // Clean up workspace after build completion
+            // Clean up workspace and stop running containers
+            sh "docker-compose down"
             cleanWs()
         }
     }
 }
+
