@@ -10,16 +10,18 @@ pipeline {
     stages {
         stage('Clone Repository') {
             steps {
-                // Replace with your repository URL
-                git 'https://github.com/your-repository.git'
+                // Clone the repository with the source code
+                git 'https://github.com/Ghanu8/test.git'
             }
         }
 
         stage('Build Docker Image') {
             steps {
                 script {
-                    // Build Docker image
-                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                    // Build the Docker image
+                    sh """
+                        docker build -t ${IMAGE_NAME}:${IMAGE_TAG} .
+                    """
                 }
             }
         }
@@ -27,7 +29,7 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 script {
-                    // Run Trivy to scan the Docker image
+                    // Run Trivy to scan the Docker image and generate an HTML report
                     sh """
                         trivy image --format html --output ${TRIVY_REPORT} ${IMAGE_NAME}:${IMAGE_TAG}
                     """
@@ -37,18 +39,20 @@ pipeline {
 
         stage('Publish Trivy Report') {
             steps {
-                // Publish the Trivy report in the console and archive it
                 script {
+                    // Display the Trivy report in the Jenkins console
                     sh "cat ${TRIVY_REPORT}"
+
+                    // Archive the Trivy report as a build artifact
+                    archiveArtifacts artifacts: "${TRIVY_REPORT}", allowEmptyArchive: true
                 }
-                archiveArtifacts artifacts: "${TRIVY_REPORT}", allowEmptyArchive: true
             }
         }
     }
 
     post {
         always {
-            // Clean up workspace after the job completes
+            // Clean up workspace after build completion
             cleanWs()
         }
     }
