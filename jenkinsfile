@@ -1,0 +1,55 @@
+pipeline {
+    agent any
+    
+    environment {
+        IMAGE_NAME = "your-docker-image"
+        IMAGE_TAG = "latest"
+        TRIVY_REPORT = "trivy_report.html"
+    }
+
+    stages {
+        stage('Clone Repository') {
+            steps {
+                // Replace with your repository URL
+                git 'https://github.com/your-repository.git'
+            }
+        }
+
+        stage('Build Docker Image') {
+            steps {
+                script {
+                    // Build Docker image
+                    docker.build("${IMAGE_NAME}:${IMAGE_TAG}")
+                }
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                script {
+                    // Run Trivy to scan the Docker image
+                    sh """
+                        trivy image --format html --output ${TRIVY_REPORT} ${IMAGE_NAME}:${IMAGE_TAG}
+                    """
+                }
+            }
+        }
+
+        stage('Publish Trivy Report') {
+            steps {
+                // Publish the Trivy report in the console and archive it
+                script {
+                    sh "cat ${TRIVY_REPORT}"
+                }
+                archiveArtifacts artifacts: "${TRIVY_REPORT}", allowEmptyArchive: true
+            }
+        }
+    }
+
+    post {
+        always {
+            // Clean up workspace after the job completes
+            cleanWs()
+        }
+    }
+}
